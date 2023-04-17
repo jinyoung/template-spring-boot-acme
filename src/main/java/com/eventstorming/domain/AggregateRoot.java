@@ -54,7 +54,6 @@ public class {{namePascalCase}} {{#checkExtends aggregateRoot.entities.relations
         {{/queryOption.multipleResult}}
         {{/outgoing}}
         **/
-        {{/outgoing}}
     {{/incoming}}
 
         {{namePascalCase}} {{nameCamelCase}} = new {{namePascalCase}}(this);

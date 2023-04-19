@@ -4,23 +4,8 @@ path: frontend/src/components
 ---
 <template>
     {{#referenceClass}}
-    <v-card outlined @click="openDialog">
-        <v-card-title>
-            {{../referenceClass}} : \{{ referenceValue ? referenceValue.name : '' }}
-        </v-card-title>
-
-        <v-dialog v-model="pickerDialog">
-            <v-card>
-                <v-card-title>{{../referenceClass}}</v-card-title>
-                <v-card-text>
-                    <{{../referenceClass}}Picker v-model="value" @selected="pick"/>
-                </v-card-text>
-                <v-card-actions>
-                    <v-spacer></v-spacer>
-                    <v-btn color="deep-purple lighten-2" text @click="pickerDialog = false">Close</v-btn>
-                </v-card-actions>
-            </v-card>
-        </v-dialog>
+    <v-card outlined>
+        <{{../referenceClass}}Picker v-model="value" @selected="pick" :editMode="editMode" />
     </v-card>
     {{/referenceClass}}
 
@@ -77,7 +62,6 @@ path: frontend/src/components
             {{#referenceClass}}
             newValue: {},
             pickerDialog: false,
-            referenceValue: null,
             {{/referenceClass}}
         }),
         async created() {
@@ -92,14 +76,6 @@ path: frontend/src/components
             {{#referenceClass}}
             else {
                 this.newValue = this.value;
-                var path = '/{{#toURL ../referenceClass}}{{/toURL}}';
-                var temp = await axios.get(axios.fixUrl(path + '/' +  Object.values(this.value)[0]));
-                if(temp.data) {
-                    this.referenceValue = temp.data
-                {{#fieldDescriptors}}
-                    {{#isName}}this.referenceValue.nameField = temp.data.{{nameCamelCase}}; {{/isName}}
-                {{/fieldDescriptors}}
-                }
             }
             {{/referenceClass}}
             {{^referenceClass}}
@@ -150,24 +126,8 @@ path: frontend/src/components
                 this.$emit('change', this.value);
             },
             {{#referenceClass}}
-            openDialog() {
-                var path = '/{{#toURL ../referenceClass}}{{/toURL}}/';
-
-                if(this.editMode) {
-                    this.pickerDialog = true;
-                } else {
-                    this.pickerDialog = false;
-                    this.$router.push(path + this.value.id);
-                }
-            },
             async pick(val){
                 this.newValue = val;
-                var path = '/{{#toURL ../referenceClass}}{{/toURL}}';
-                var temp = await axios.get(axios.fixUrl(path + '/' + val.id));
-                if(temp.data) {
-                    this.referenceValue = temp.data;
-                }
-                this.referenceValue.nameField = val.nameField;
             },
             {{/referenceClass}}
         }
@@ -261,122 +221,6 @@ path: frontend/src/components
         } else {
             return "{}"
         }
-    })
-
-     window.$HandleBars.registerHelper('toURL', function (className) {
-
-        var pluralize = function(value, revert){
-
-            var plural = {
-                '(quiz)$'               : "$1zes",
-                '^(ox)$'                : "$1en",
-                '([m|l])ouse$'          : "$1ice",
-                '(matr|vert|ind)ix|ex$' : "$1ices",
-                '(x|ch|ss|sh)$'         : "$1es",
-                '([^aeiouy]|qu)y$'      : "$1ies",
-                '(hive)$'               : "$1s",
-                '(?:([^f])fe|([lr])f)$' : "$1$2ves",
-                '(shea|lea|loa|thie)f$' : "$1ves",
-                'sis$'                  : "ses",
-                '([ti])um$'             : "$1a",
-                '(tomat|potat|ech|her|vet)o$': "$1oes",
-                '(bu)s$'                : "$1ses",
-                '(alias)$'              : "$1es",
-                '(octop)us$'            : "$1i",
-                '(ax|test)is$'          : "$1es",
-                '(us)$'                 : "$1es",
-                '([^s]+)$'              : "$1s"
-            };
-
-            var singular = {
-                '(quiz)zes$'             : "$1",
-                '(matr)ices$'            : "$1ix",
-                '(vert|ind)ices$'        : "$1ex",
-                '^(ox)en$'               : "$1",
-                '(alias)es$'             : "$1",
-                '(octop|vir)i$'          : "$1us",
-                '(cris|ax|test)es$'      : "$1is",
-                '(shoe)s$'               : "$1",
-                '(o)es$'                 : "$1",
-                '(bus)es$'               : "$1",
-                '([m|l])ice$'            : "$1ouse",
-                '(x|ch|ss|sh)es$'        : "$1",
-                '(m)ovies$'              : "$1ovie",
-                '(s)eries$'              : "$1eries",
-                '([^aeiouy]|qu)ies$'     : "$1y",
-                '([lr])ves$'             : "$1f",
-                '(tive)s$'               : "$1",
-                '(hive)s$'               : "$1",
-                '(li|wi|kni)ves$'        : "$1fe",
-                '(shea|loa|lea|thie)ves$': "$1f",
-                '(^analy)ses$'           : "$1sis",
-                '((a)naly|(b)a|(d)iagno|(p)arenthe|(p)rogno|(s)ynop|(t)he)ses$': "$1$2sis",        
-                '([ti])a$'               : "$1um",
-                '(n)ews$'                : "$1ews",
-                '(h|bl)ouses$'           : "$1ouse",
-                '(corpse)s$'             : "$1",
-                '(us)es$'                : "$1",
-                's$'                     : ""
-            };
-
-            var irregular = {
-                'move'   : 'moves',
-                'foot'   : 'feet',
-                'goose'  : 'geese',
-                'sex'    : 'sexes',
-                'child'  : 'children',
-                'man'    : 'men',
-                'tooth'  : 'teeth',
-                'person' : 'people',
-                'index'  : 'indexes'
-            };
-
-            var uncountable = [
-                'sheep', 
-                'fish',
-                'deer',
-                'moose',
-                'series',
-                'species',
-                'money',
-                'rice',
-                'information',
-                'equipment'
-            ];
-
-            // save some time in the case that singular and plural are the same
-            //console.log("value = " + value)
-            if(uncountable.indexOf(value.toLowerCase()) >= 0)
-            return this;
-
-            // check for irregular forms
-            for(var word in irregular){
-
-                if(revert){
-                    var pattern = new RegExp(irregular[word]+'$', 'i');
-                    var replace = word;
-                } else{ var pattern = new RegExp(word+'$', 'i');
-                    var replace = irregular[word];
-                }
-                if(pattern.test(value))
-                    return value.replace(pattern, replace);
-            }
-
-            if(revert) var array = singular;
-                else  var array = plural;
-
-            // check for matches using regular expressions
-            for(var reg in array){
-
-                var pattern = new RegExp(reg, 'i');
-
-                if(pattern.test(value))
-                    return value.replace(pattern, array[reg]);
-            }
-
-            return value;
-        }
-        return pluralize(className.toLowerCase())
     })
 
 </function>

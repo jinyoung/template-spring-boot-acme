@@ -4,23 +4,8 @@ path: frontend/src/components
 ---
 <template>
     {{#referenceClass}}
-    <v-card outlined @click="openDialog">
-        <v-card-title>
-            {{../referenceClass}} : \{{ referenceValue ? referenceValue.name : '' }}
-        </v-card-title>
-
-        <v-dialog v-model="pickerDialog">
-            <v-card>
-                <v-card-title>{{../referenceClass}}</v-card-title>
-                <v-card-text>
-                    <{{../referenceClass}}Picker v-model="value" @selected="pick"/>
-                </v-card-text>
-                <v-card-actions>
-                    <v-spacer></v-spacer>
-                    <v-btn color="deep-purple lighten-2" text @click="pickerDialog = false">Close</v-btn>
-                </v-card-actions>
-            </v-card>
-        </v-dialog>
+    <v-card outlined>
+        <{{../referenceClass}}Picker v-model="value" @selected="pick" :editMode="editMode" />
     </v-card>
     {{/referenceClass}}
 
@@ -243,8 +228,6 @@ path: frontend/src/components
         data: () => ({
         {{#referenceClass}}
             newValue: {},
-            pickerDialog: false,
-            referenceValue: null,
         {{/referenceClass}}
         {{^referenceClass}}
         {{#each relations}}{{#if (isGeneralization sourceElement.namePascalCase ../namePascalCase relationType)}}
@@ -272,15 +255,6 @@ path: frontend/src/components
             {{#referenceClass}}
             else {
                 this.newValue = this.value;
-                var path = '/{{#toURL ../referenceClass}}{{/toURL}}';
-                
-                var temp = await axios.get(axios.fixUrl(path + '/' +  Object.values(this.value)[0]))
-                if(temp.data) {
-                    this.referenceValue = temp.data
-                {{#fieldDescriptors}}
-                    {{#isName}}this.referenceValue.nameField = temp.data.{{nameCamelCase}}; {{/isName}}
-                {{/fieldDescriptors}}
-                }
             }
             {{/referenceClass}}
             {{^referenceClass}}
@@ -322,24 +296,8 @@ path: frontend/src/components
                 this.editMode = true;
             },
             {{#referenceClass}}
-            openDialog() {
-                var path = '/{{#toURL ../referenceClass}}{{/toURL}}/';
-
-                if(this.editMode) {
-                    this.pickerDialog = true;
-                } else {
-                    this.pickerDialog = false;
-                    this.$router.push(path + this.value.id);
-                }
-            },
             async pick(val){
                 this.newValue = val;
-                var path = '/{{#toURL ../referenceClass}}{{/toURL}}';
-                var temp = await axios.get(axios.fixUrl(path + '/' + val.id));
-                if(temp.data) {
-                    this.referenceValue = temp.data;
-                }
-                this.referenceValue.nameField = val.nameField;
             },
             {{/referenceClass}}
             {{^referenceClass}}

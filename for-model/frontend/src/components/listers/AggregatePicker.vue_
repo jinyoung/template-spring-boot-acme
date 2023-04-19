@@ -5,7 +5,7 @@ path: frontend/src/components/listers
 <template>
     <div>
         <v-card-title @click="openDialog" style="cursor: pointer;">
-            {{namePascalCase}} : {{#aggregateRoot.fieldDescriptors}}{{#isName}} \{{ referenceValue.{{nameCamelCase}} }} {{/isName}}{{/aggregateRoot.fieldDescriptors}}
+            {{namePascalCase}} : {{#aggregateRoot.fieldDescriptors}}{{#isName}} \{{referenceValue ? referenceValue.{{nameCamelCase}} : '' }} {{/isName}}{{/aggregateRoot.fieldDescriptors}}
         </v-card-title>
 
         <v-dialog v-model="pickerDialog">

@@ -43,10 +43,6 @@ path: frontend/src/components
 </template>
 
 <script>
-    {{#referenceClass}}
-    const axios = require('axios').default;
-    {{/referenceClass}}
-
     export default {
         name: '{{namePascalCase}}',
         components:{},

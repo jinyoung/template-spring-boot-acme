@@ -111,10 +111,22 @@ public class {{ namePascalCase }}Controller {
     {{/if}}
     {{/each}}
     {{/if}}
+    @PutMapping("/{{namePlural}}/search/{{#contexts.views}}{{#queryOption}}{{apiPath}}{{/queryOption}}{{/contexts.views}}")
+    public Object {{#contexts.views}}{{#queryOption}}{{apiPath}}{{/queryOption}}{{/contexts.views}}(@RequestBody {{#contexts.views}}{{namePascalCase}}Query{{/contexts.views}} query){
+        return {{nameCamelCase}}Repository.{{#contexts.views}}{{#queryOption}}{{apiPath}}{{/queryOption}}{{/contexts.views}}({{#contexts.views}}{{#queryParameters}}query.{{namePascalCase}}(){{^@last}},{{/@last}}{{/queryParameters}}{{/contexts.views}});
+    }
 }
 //>>> Clean Arch / Inbound Adaptor
 
 <function>
+var me = this;
+me.contexts.views = [];
+if(this.boundedContext.readModels)
+this.boundedContext.readModels.forEach(view=>{
+    if(view.aggregate == me && view.dataProjection=="query-for-aggregate"){
+        me.contexts.views.push(view);
+    }
+})
 window.$HandleBars.registerHelper('isGeneralization', function (toName, name, type) {
     try {
         if(toName == null || name == null || type == null) {

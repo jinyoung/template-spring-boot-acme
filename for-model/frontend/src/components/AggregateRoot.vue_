@@ -26,15 +26,15 @@ path: frontend/src/components
         {{#if (isPrimitive className)}}
             <{{getPrimitiveType className}} label="{{namePascalCase}}" v-model="value.{{nameCamelCase}}" :editMode="editMode"/>
         {{else}}
+            {{#isList}}
+            <{{getEntityClassNameOfList className}}List offline label="{{namePascalCase}}" v-model="value.{{nameCamelCase}}" :editMode="editMode" @change="change"/>
+            {{/isList}}
             {{#checkVO className}}
-            <{{className}} offline label="{{namePascalCase}}" v-model="value.{{nameCamelCase}}" :editMode="editMode" @change="change"/>
+            <{{className}}{{#isList}}List{{/isList}} offline label="{{namePascalCase}}" v-model="value.{{nameCamelCase}}" :editMode="editMode" @change="change"/>
             {{/checkVO}}
             {{#checkEntityMember className}}
             <{{className}} offline label="{{namePascalCase}}" v-model="value.{{nameCamelCase}}" :editMode="editMode" @change="change"/>
             {{/checkEntityMember}}
-            {{#checkListOfEntityMember className}}
-            <{{getEntityClassNameOfList className}}Manager offline label="{{namePascalCase}}" v-model="value.{{nameCamelCase}}" :editMode="editMode" @change="change"/>
-            {{/checkListOfEntityMember}}
         {{/if}}
         {{/if}}
         {{/aggregateRoot.fieldDescriptors}}
@@ -486,8 +486,8 @@ path: frontend/src/components
         }
     })
 
-    window.$HandleBars.registerHelper('checkListOfEntityMember', function (className, options) {
-        if(className.indexOf("List")==0){
+    window.$HandleBars.registerHelper('checkListOfEntityMember', function (isList, options) {
+        if(isList){
             return options.fn(this);
         } else {
             return options.inverse(this);

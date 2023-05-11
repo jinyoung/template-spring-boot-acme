@@ -21,15 +21,15 @@ path: frontend/src/components
         {{#if (isPrimitive className)}}
             <{{getPrimitiveType className}} label="{{namePascalCase}}" v-model="value.{{nameCamelCase}}" :editMode="editMode"/>
         {{else}}
+        {{#isList}}
+            <{{getEntityClassNameOfList className}}List offline label="{{namePascalCase}}" v-model="value.{{nameCamelCase}}" :editMode="editMode" @change="change"/>
+        {{/isList}}
         {{#checkVO className}}
-            <{{className}} offline label="{{namePascalCase}}" v-model="value.{{nameCamelCase}}" :editMode="editMode" @change="change"/>
+            <{{className}}{{#isList}}List{{/isList}} offline label="{{namePascalCase}}" v-model="value.{{nameCamelCase}}" :editMode="editMode" @change="change"/>
         {{/checkVO}}
         {{#checkEntityMember className}}
             <{{className}} offline label="{{namePascalCase}}" v-model="value.{{nameCamelCase}}" :editMode="editMode" @change="change"/>
         {{/checkEntityMember}}
-        {{#checkListOfEntityMember className}}
-            <{{getEntityClassNameOfList className}}List offline label="{{namePascalCase}}" v-model="value.{{nameCamelCase}}" :editMode="editMode" @change="change"/>
-        {{/checkListOfEntityMember}}
         {{/if}}
         {{/if}}
         {{/fieldDescriptors}}
@@ -43,6 +43,10 @@ path: frontend/src/components
 </template>
 
 <script>
+    {{#referenceClass}}
+    const axios = require('axios').default;
+    {{/referenceClass}}
+
     export default {
         name: '{{namePascalCase}}',
         components:{},

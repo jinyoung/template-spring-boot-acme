@@ -5,85 +5,91 @@ path: {{boundedContext.name}}/{{{options.packagePath}}}/domain
 ---
 package {{options.package}}.domain;
 
-{{#lifeCycles}}
-{{#events}}
-import {{../../options.package}}.domain.{{namePascalCase}};
-{{/events}}
-{{/lifeCycles}}
-import {{options.package}}.{{boundedContext.namePascalCase}}Application;
+import static {{options.package}}.{{boundedContext.namePascalCase}}Application.applicationContext;
 import javax.persistence.*;
 import java.util.List;
 import lombok.Data;
 import java.util.Date;
-import org.springframework.context.ApplicationContext;
+import java.util.Collections;
+
+import io.eventuate.tram.events.publisher.DomainEventPublisher;
+
 
 @Entity
 @Table(name="{{namePascalCase}}_table")
 @Data
 {{#setDiscriminator aggregateRoot.entities.relations nameCamelCase}}{{/setDiscriminator}}
-//<<< DDD / Aggregate Root
 public class {{namePascalCase}} {{#checkExtends aggregateRoot.entities.relations namePascalCase}}{{/checkExtends}} {
-
 
     {{#aggregateRoot.fieldDescriptors}}
     {{^isVO}}{{#isKey}}
     @Id
     @GeneratedValue(strategy=GenerationType.AUTO)
-    {{/isKey}}{{/isVO}}{{#isLob}}@Lob{{/isLob}}
+    {{/isKey}}{{/isVO}}
+    {{#isLob}}@Lob{{/isLob}}
     {{#if (isPrimitive className)}}{{#isList}}{{/isList}}{{/if}}
-    {{#checkRelations ../aggregateRoot.entities.relations className isVO referenceClass}}{{/checkRelations}}
+    {{#checkRelations ../aggregateRoot.entities.relations className isVO}}{{/checkRelations}}
     {{#checkAttribute ../aggregateRoot.entities.relations ../name className isVO}}{{/checkAttribute}}
-    private {{{className}}} {{nameCamelCase}};{{/aggregateRoot.fieldDescriptors}}
+    private {{{className}}} {{nameCamelCase}};
+    {{/aggregateRoot.fieldDescriptors}}
 
-{{#contexts.eventsPerLifecycle}}
-    @{{annotation}}
-    public void on{{annotation}}(){
+{{#lifeCycles}}
+    {{annotation}}
+    public void on{{trigger}}(){
     {{#events}}
-       
-        {{#incoming "Command" this }}
-            {{#outgoing "ReadModel" this}}
-            /** TODO: Get request to {{aggregate.namePascalCase}}
-            {{@root.options.package}}.external.{{namePascalCase}}Query {{nameCamelCase}}Query = new {{@root.options.package}}.external.{{namePascalCase}}Query();
-            {{@root.options.package}}.external.{{aggregate.namePascalCase}}Service {{aggregate.nameCamelCase}}Service = applicationContext().getBean({{@root.options.package}}.external.{{aggregate.namePascalCase}}Service.class);
-            {{#queryOption.multipleResult}}
-            List<{{@root.options.package}}.external.{{aggregate.namePascalCase}}> {{boundedContext.nameCamelCase}}List = 
-                {{aggregate.nameCamelCase}}Service.{{nameCamelCase}}({{nameCamelCase}}Query);
-            {{else}}
-            {{@root.options.package}}.external.{{aggregate.namePascalCase}} {{boundedContext.nameCamelCase}} = 
-                {{aggregate.nameCamelCase}}Service.{{nameCamelCase}}( {TODO: please put the id} );
-            {{/queryOption.multipleResult}}
-            **/
-            {{/outgoing}}
-        {{/incoming}}
+
+        {{#relationCommandInfo}}
+            {{#commandValue}}
+        //Following code causes dependency to external APIs
+        // it is NOT A GOOD PRACTICE. instead, Event-Policy mapping is recommended.
+
+        {{^isRestRepository}}
+        {{#if (has fieldDescriptors)}}
+        {{../../../../options.package}}.external.{{namePascalCase}}Command {{nameCamelCase}}Command = new {{../../../../options.package}}.external.{{namePascalCase}}Command();
+        // mappings goes here
+        applicationContext.getBean({{../../../../options.package}}.external.{{aggregate.namePascalCase}}Service.class)
+            .{{nameCamelCase}}(/* get???(), */ {{nameCamelCase}}Command);
+        {{/if}}
+        {{/isRestRepository}}
+
+        {{#isRestRepository}}
+        {{../../../../options.package}}.external.{{aggregate.namePascalCase}} {{aggregate.nameCamelCase}} = new {{../../../../options.package}}.external.{{aggregate.namePascalCase}}();
+        // mappings goes here
+        applicationContext.getBean({{../../../../options.package}}.external.{{aggregate.namePascalCase}}Service.class)
+            .{{nameCamelCase}}({{aggregate.nameCamelCase}});
+        {{/isRestRepository}}
+
+            {{/commandValue}}
+        {{/relationCommandInfo}}
 
         {{namePascalCase}} {{nameCamelCase}} = new {{namePascalCase}}(this);
-        {{nameCamelCase}}.publishAfterCommit();
 
+        publisher().publish(getClass(), getId(), Collections.singletonList({{nameCamelCase}}));
 
-        {{#outgoing "Command" this}}
-            /** TODO:  REST API Call to {{aggregate.namePascalCase}}
-            {{@root.options.package}}.external.{{namePascalCase}}Command {{nameCamelCase}}Command = new {{@root.options.package}}.external.{{namePascalCase}}Command();
-            
-            // TODO: fill the command properties to invoke below
-            
-            applicationContext().getBean({{@root.options.package}}.external.{{aggregate.namePascalCase}}Service.class)
-            .{{nameCamelCase}}({TODO: please put the id}, {{nameCamelCase}}Command);
-            **/
-        {{/outgoing}}
     {{/events}}
-    
+    {{#commands}}
+        {{#relationCommandInfo}}
+            {{#commandValue}}
+        // Get request from {{aggregate.namePascalCase}}
+        //{{../../../../options.package}}.external.{{aggregate.namePascalCase}} {{aggregate.nameCamelCase}} =
+        //    applicationContext.getBean({{../../../../options.package}}.external.{{aggregate.namePascalCase}}Service.class)
+        //    .get{{aggregate.namePascalCase}}(/** mapping value needed */);
+
+            {{/commandValue}}
+        {{/relationCommandInfo}}
+    {{/commands}}
     }
-{{/contexts.eventsPerLifecycle}}
-
-
+{{/lifeCycles}}
 
     public static {{namePascalCase}}Repository repository(){
-        {{namePascalCase}}Repository {{nameCamelCase}}Repository = applicationContext().getBean({{namePascalCase}}Repository.class);
+        {{namePascalCase}}Repository {{nameCamelCase}}Repository = applicationContext.getBean({{namePascalCase}}Repository.class);
         return {{nameCamelCase}}Repository;
     }
 
-    public static ApplicationContext applicationContext(){        
-        return {{boundedContext.namePascalCase}}Application.applicationContext;
+    static DomainEventPublisher publisher(){
+        return applicationContext.getBean(
+            DomainEventPublisher.class
+        );
     }
 
 {{#aggregateRoot.operations}}
@@ -102,10 +108,7 @@ public class {{namePascalCase}} {{#checkExtends aggregateRoot.entities.relations
 
     {{#commands}}
     {{^isRestRepository}}
-//<<< Clean Arch / Port Method
-    public void {{nameCamelCase}}({{namePascalCase}}Command {{nameCamelCase}}Command){
-        // implement the business logics here:
-
+    public void {{nameCamelCase}}({{#if (has fieldDescriptors)}}{{namePascalCase}}Command {{nameCamelCase}}Command{{/if}}){
         {{#triggerByCommand}}
         {{eventValue.namePascalCase}} {{eventValue.nameCamelCase}} = new {{eventValue.namePascalCase}}(this);
         {{eventValue.nameCamelCase}}.publishAfterCommit();
@@ -117,29 +120,28 @@ public class {{namePascalCase}} {{#checkExtends aggregateRoot.entities.relations
 
         {{../../../../options.package}}.external.{{aggregate.namePascalCase}} {{aggregate.nameCamelCase}} = new {{../../../../options.package}}.external.{{aggregate.namePascalCase}}();
         // mappings goes here
-        
-        {{../boundedContext.namePascalCase}}Application.applicationContext.getBean({{../../../../options.package}}.external.{{aggregate.namePascalCase}}Service.class)
+        applicationContext.getBean({{../../../../options.package}}.external.{{aggregate.namePascalCase}}Service.class)
             .{{nameCamelCase}}({{aggregate.nameCamelCase}});
 
         {{/commandValue}}
         {{/relationCommandInfo}}
         {{/triggerByCommand}}
     }
-//>>> Clean Arch / Port Method
     {{/isRestRepository}}
     {{/commands}}
 
     {{#policyList}}
     {{#relationEventInfo}}
-//<<< Clean Arch / Port Method
     public static void {{../nameCamelCase}}({{eventValue.namePascalCase}} {{eventValue.nameCamelCase}}){
 
         /** Example 1:  new item 
         {{../../namePascalCase}} {{../../nameCamelCase}} = new {{../../namePascalCase}}();
         repository().save({{../../nameCamelCase}});
+
         {{#../relationExampleEventInfo}}
         {{eventValue.namePascalCase}} {{eventValue.nameCamelCase}} = new {{eventValue.namePascalCase}}({{../../../nameCamelCase}});
-        {{eventValue.nameCamelCase}}.publishAfterCommit();
+        publisher().publish({{eventValue.nameCamelCase}}.getClass(), getId(), Collections.singletonList({{eventValue.nameCamelCase}}));
+
         {{/../relationExampleEventInfo}}
         */
 
@@ -149,55 +151,28 @@ public class {{namePascalCase}} {{#checkExtends aggregateRoot.entities.relations
             
             {{../../nameCamelCase}} // do something
             repository().save({{../../nameCamelCase}});
+
             {{#../relationExampleEventInfo}}
             {{eventValue.namePascalCase}} {{eventValue.nameCamelCase}} = new {{eventValue.namePascalCase}}({{../../../nameCamelCase}});
-            {{eventValue.nameCamelCase}}.publishAfterCommit();
+
             {{/../relationExampleEventInfo}}
+
          });
         */
 
         
     }
-//>>> Clean Arch / Port Method
     {{/relationEventInfo}}
     {{/policyList}}
 
 
 }
-//>>> DDD / Aggregate Root
 
 <function>
-
-var eventsPerLifecycle = []
-
-this.events.forEach(event=>{
-    if(event.trigger){
-        var theLifecycle = eventsPerLifecycle.find(l => l.annotation === event.trigger)
-        if(!theLifecycle){
-            theLifecycle = {annotation: event.trigger.startsWith("@") ? event.trigger.split("@")[1]: event.trigger, events: []};
-            eventsPerLifecycle.push(theLifecycle)
-
-        }
-        
-        theLifecycle.events.push(event)
-    }
-})
-
-this.contexts.eventsPerLifecycle = eventsPerLifecycle
-
-
 window.$HandleBars.registerHelper('checkDateType', function (fieldDescriptors) {
     for(var i = 0; i < fieldDescriptors.length; i ++ ){
         if(fieldDescriptors[i] && fieldDescriptors[i].className == 'Date'){
         return "import java.util.Date; \n"
-        }
-    }
-});
-
-window.$HandleBars.registerHelper('checkBigDecimal', function (fieldDescriptors) {
-    for(var i = 0; i < fieldDescriptors.length; i ++ ){
-        if(fieldDescriptors[i] && fieldDescriptors[i].className.includes('BigDecimal')){
-            return "import java.math.BigDecimal;";
         }
     }
 });
@@ -244,7 +219,7 @@ window.$HandleBars.registerHelper('checkAttribute', function (relations, source,
         for(var i =0; i<samePascal.length; i++){
             var camel = sameCamel[i];
             var pascal = samePascal[i];
-            var overrides = `@AttributeOverride(name="${camel}", column= @Column(name="${targetName}", nullable=true))\n`;
+            var overrides = `@AttributeOverride(name="${camel}", column= @Column(name="${targetName}${pascal}", nullable=true))\n`;
             attributeOverrides += overrides;
         }
 
@@ -265,7 +240,7 @@ window.$HandleBars.registerHelper('isPrimitive', function (className) {
     }
 });
 
-window.$HandleBars.registerHelper('checkRelations', function (relations, className, isVO, referenceClass) {
+window.$HandleBars.registerHelper('checkRelations', function (relations, className, isVO) {
     try {
         if(typeof relations === "undefined") {
             return 
@@ -311,9 +286,6 @@ window.$HandleBars.registerHelper('checkRelations', function (relations, classNa
                                 }
                             }
                         }
-                    }
-                    if(referenceClass) {
-                        return "@OneToOne"
                     }
                 }
             }
@@ -420,4 +392,3 @@ window.$HandleBars.registerHelper('has', function (members) {
 
 
 </function>
-

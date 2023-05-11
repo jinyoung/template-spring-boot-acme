@@ -113,7 +113,7 @@ public class {{ namePascalCase }}Controller {
     {{/if}}
     @PutMapping("/{{namePlural}}/search/{{#contexts.views}}{{#queryOption}}{{apiPath}}{{/queryOption}}{{/contexts.views}}")
     public Object {{#contexts.views}}{{#queryOption}}{{apiPath}}{{/queryOption}}{{/contexts.views}}(@RequestBody {{#contexts.views}}{{namePascalCase}}Query{{/contexts.views}} query){
-        return {{nameCamelCase}}Repository.{{#contexts.views}}{{#queryOption}}{{apiPath}}{{/queryOption}}{{/contexts.views}}({{#contexts.views}}{{#queryParameters}}query.{{namePascalCase}}(){{^@last}},{{/@last}}{{/queryParameters}}{{/contexts.views}});
+        return {{nameCamelCase}}Repository.{{#contexts.views}}{{#queryOption}}{{apiPath}}{{/queryOption}}{{/contexts.views}}({{#contexts.views}}{{#queryParameters}}query.get{{namePascalCase}}(){{^@last}},{{/@last}}{{/queryParameters}}{{/contexts.views}});
     }
 }
 //>>> Clean Arch / Inbound Adaptor

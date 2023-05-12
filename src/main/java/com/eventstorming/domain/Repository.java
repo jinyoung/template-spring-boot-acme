@@ -15,6 +15,14 @@ public interface {{namePascalCase}}Repository extends PagingAndSortingRepository
 }
 //>>> PoEAA / Repository
 <function>
+  var me = this;
+  me.contexts.views = [];
+  if(this.boundedContext.readModels)
+  this.boundedContext.readModels.forEach(view=>{
+      if(view.aggregate == me && view.dataProjection=="query-for-aggregate"){
+          me.contexts.views.push(view);
+      }
+  })
   window.$HandleBars.registerHelper('isNotId', function (className) {
     return (className != 'id')
   })

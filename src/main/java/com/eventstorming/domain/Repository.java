@@ -3,7 +3,7 @@ fileName: {{namePascalCase}}Repository.java
 path: {{boundedContext.name}}/{{{options.packagePath}}}/domain
 ---
 package {{options.package}}.domain;
-
+{{#contexts.views}}import java.util.List;{{/contexts.views}}
 import {{options.package}}.domain.*;
 import org.springframework.data.repository.PagingAndSortingRepository;
 import org.springframework.data.rest.core.annotation.RepositoryRestResource;
@@ -11,7 +11,7 @@ import org.springframework.data.rest.core.annotation.RepositoryRestResource;
 //<<< PoEAA / Repository
 @RepositoryRestResource(collectionResourceRel="{{namePlural}}", path="{{namePlural}}")
 public interface {{namePascalCase}}Repository extends PagingAndSortingRepository<{{namePascalCase}}, {{aggregateRoot.keyFieldDescriptor.className}}>{
-  {{#contexts.views}}{{#queryOption}}List<{{namePascalCase}}> {{apiPath}}{{/queryOption}}{{/contexts.views}}{{#contexts.views}}{{#queryParameters}}({{className}} {{nameCamelCase}}{{^@last}}, {{/@last}});{{/queryParameters}}{{/contexts.views}}
+  {{#contexts.views}}List<{{#aggregate}}{{namePascalCase}}{{/aggregate}}> {{#queryOption}}{{apiPath}}{{/queryOption}}({{#queryParameters}}{{className}} {{nameCamelCase}}{{^@last}}, {{/@last}}{{/queryParameters}});{{/contexts.views}}
 }
 //>>> PoEAA / Repository
 <function>

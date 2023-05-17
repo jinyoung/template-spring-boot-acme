@@ -5,21 +5,25 @@ path: {{boundedContext.name}}/{{{options.packagePath}}}/domain
 ---
 package {{options.package}}.domain;
 
-import static {{options.package}}.{{boundedContext.namePascalCase}}Application.applicationContext;
+{{#lifeCycles}}
+{{#events}}
+import {{../../options.package}}.domain.{{namePascalCase}};
+{{/events}}
+{{/lifeCycles}}
+import {{options.package}}.{{boundedContext.namePascalCase}}Application;
 import javax.persistence.*;
 import java.util.List;
 import lombok.Data;
 import java.util.Date;
-import java.util.Collections;
-
-import io.eventuate.tram.events.publisher.DomainEventPublisher;
-
+{{#checkBigDecimal aggregateRoot.fieldDescriptors}}{{/checkBigDecimal}}
 
 @Entity
 @Table(name="{{namePascalCase}}_table")
 @Data
 {{#setDiscriminator aggregateRoot.entities.relations nameCamelCase}}{{/setDiscriminator}}
+//<<< DDD / Aggregate Root
 public class {{namePascalCase}} {{#checkExtends aggregateRoot.entities.relations namePascalCase}}{{/checkExtends}} {
+
 
     {{#aggregateRoot.fieldDescriptors}}
     {{^isVO}}{{#isKey}}
@@ -27,8 +31,8 @@ public class {{namePascalCase}} {{#checkExtends aggregateRoot.entities.relations
     @GeneratedValue(strategy=GenerationType.AUTO)
     {{/isKey}}{{/isVO}}
     {{#isLob}}@Lob{{/isLob}}
-    {{#if (isPrimitive className)}}{{#isList}}{{/isList}}{{/if}}
-    {{#checkRelations ../aggregateRoot.entities.relations className isVO}}{{/checkRelations}}
+    {{#if (isPrimitive className)}}{{#isList}}@ElementCollection{{/isList}}{{/if}}
+    {{#checkRelations ../aggregateRoot.entities.relations className isVO referenceClass isList}}{{/checkRelations}}
     {{#checkAttribute ../aggregateRoot.entities.relations ../name className isVO}}{{/checkAttribute}}
     private {{{className}}} {{nameCamelCase}};
     {{/aggregateRoot.fieldDescriptors}}
@@ -47,7 +51,7 @@ public class {{namePascalCase}} {{#checkExtends aggregateRoot.entities.relations
         {{#if (has fieldDescriptors)}}
         {{../../../../options.package}}.external.{{namePascalCase}}Command {{nameCamelCase}}Command = new {{../../../../options.package}}.external.{{namePascalCase}}Command();
         // mappings goes here
-        applicationContext.getBean({{../../../../options.package}}.external.{{aggregate.namePascalCase}}Service.class)
+        {{../boundedContext.namePascalCase}}Application.applicationContext.getBean({{../../../../options.package}}.external.{{aggregate.namePascalCase}}Service.class)
             .{{nameCamelCase}}(/* get???(), */ {{nameCamelCase}}Command);
         {{/if}}
         {{/isRestRepository}}
@@ -55,7 +59,7 @@ public class {{namePascalCase}} {{#checkExtends aggregateRoot.entities.relations
         {{#isRestRepository}}
         {{../../../../options.package}}.external.{{aggregate.namePascalCase}} {{aggregate.nameCamelCase}} = new {{../../../../options.package}}.external.{{aggregate.namePascalCase}}();
         // mappings goes here
-        applicationContext.getBean({{../../../../options.package}}.external.{{aggregate.namePascalCase}}Service.class)
+        {{../boundedContext.namePascalCase}}Application.applicationContext.getBean({{../../../../options.package}}.external.{{aggregate.namePascalCase}}Service.class)
             .{{nameCamelCase}}({{aggregate.nameCamelCase}});
         {{/isRestRepository}}
 
@@ -63,8 +67,7 @@ public class {{namePascalCase}} {{#checkExtends aggregateRoot.entities.relations
         {{/relationCommandInfo}}
 
         {{namePascalCase}} {{nameCamelCase}} = new {{namePascalCase}}(this);
-
-        publisher().publish(getClass(), getId(), Collections.singletonList({{nameCamelCase}}));
+        {{nameCamelCase}}.publishAfterCommit();
 
     {{/events}}
     {{#commands}}
@@ -72,7 +75,7 @@ public class {{namePascalCase}} {{#checkExtends aggregateRoot.entities.relations
             {{#commandValue}}
         // Get request from {{aggregate.namePascalCase}}
         //{{../../../../options.package}}.external.{{aggregate.namePascalCase}} {{aggregate.nameCamelCase}} =
-        //    applicationContext.getBean({{../../../../options.package}}.external.{{aggregate.namePascalCase}}Service.class)
+        //    {{../relationCommandInfo.boundedContext.namePascalCase}}Application.applicationContext.getBean({{../../../../options.package}}.external.{{aggregate.namePascalCase}}Service.class)
         //    .get{{aggregate.namePascalCase}}(/** mapping value needed */);
 
             {{/commandValue}}
@@ -82,14 +85,8 @@ public class {{namePascalCase}} {{#checkExtends aggregateRoot.entities.relations
 {{/lifeCycles}}
 
     public static {{namePascalCase}}Repository repository(){
-        {{namePascalCase}}Repository {{nameCamelCase}}Repository = applicationContext.getBean({{namePascalCase}}Repository.class);
+        {{namePascalCase}}Repository {{nameCamelCase}}Repository = {{boundedContext.namePascalCase}}Application.applicationContext.getBean({{namePascalCase}}Repository.class);
         return {{nameCamelCase}}Repository;
-    }
-
-    static DomainEventPublisher publisher(){
-        return applicationContext.getBean(
-            DomainEventPublisher.class
-        );
     }
 
 {{#aggregateRoot.operations}}
@@ -108,6 +105,7 @@ public class {{namePascalCase}} {{#checkExtends aggregateRoot.entities.relations
 
     {{#commands}}
     {{^isRestRepository}}
+//<<< Clean Arch / Port Method
     public void {{nameCamelCase}}({{#if (has fieldDescriptors)}}{{namePascalCase}}Command {{nameCamelCase}}Command{{/if}}){
         {{#triggerByCommand}}
         {{eventValue.namePascalCase}} {{eventValue.nameCamelCase}} = new {{eventValue.namePascalCase}}(this);
@@ -120,18 +118,20 @@ public class {{namePascalCase}} {{#checkExtends aggregateRoot.entities.relations
 
         {{../../../../options.package}}.external.{{aggregate.namePascalCase}} {{aggregate.nameCamelCase}} = new {{../../../../options.package}}.external.{{aggregate.namePascalCase}}();
         // mappings goes here
-        applicationContext.getBean({{../../../../options.package}}.external.{{aggregate.namePascalCase}}Service.class)
+        {{../boundedContext.namePascalCase}}Application.applicationContext.getBean({{../../../../options.package}}.external.{{aggregate.namePascalCase}}Service.class)
             .{{nameCamelCase}}({{aggregate.nameCamelCase}});
 
         {{/commandValue}}
         {{/relationCommandInfo}}
         {{/triggerByCommand}}
     }
+//>>> Clean Arch / Port Method
     {{/isRestRepository}}
     {{/commands}}
 
     {{#policyList}}
     {{#relationEventInfo}}
+//<<< Clean Arch / Port Method
     public static void {{../nameCamelCase}}({{eventValue.namePascalCase}} {{eventValue.nameCamelCase}}){
 
         /** Example 1:  new item 
@@ -140,8 +140,7 @@ public class {{namePascalCase}} {{#checkExtends aggregateRoot.entities.relations
 
         {{#../relationExampleEventInfo}}
         {{eventValue.namePascalCase}} {{eventValue.nameCamelCase}} = new {{eventValue.namePascalCase}}({{../../../nameCamelCase}});
-        publisher().publish({{eventValue.nameCamelCase}}.getClass(), getId(), Collections.singletonList({{eventValue.nameCamelCase}}));
-
+        {{eventValue.nameCamelCase}}.publishAfterCommit();
         {{/../relationExampleEventInfo}}
         */
 
@@ -154,7 +153,7 @@ public class {{namePascalCase}} {{#checkExtends aggregateRoot.entities.relations
 
             {{#../relationExampleEventInfo}}
             {{eventValue.namePascalCase}} {{eventValue.nameCamelCase}} = new {{eventValue.namePascalCase}}({{../../../nameCamelCase}});
-
+            {{eventValue.nameCamelCase}}.publishAfterCommit();
             {{/../relationExampleEventInfo}}
 
          });
@@ -162,17 +161,27 @@ public class {{namePascalCase}} {{#checkExtends aggregateRoot.entities.relations
 
         
     }
+//>>> Clean Arch / Port Method
     {{/relationEventInfo}}
     {{/policyList}}
 
 
 }
+//>>> DDD / Aggregate Root
 
 <function>
 window.$HandleBars.registerHelper('checkDateType', function (fieldDescriptors) {
     for(var i = 0; i < fieldDescriptors.length; i ++ ){
         if(fieldDescriptors[i] && fieldDescriptors[i].className == 'Date'){
         return "import java.util.Date; \n"
+        }
+    }
+});
+
+window.$HandleBars.registerHelper('checkBigDecimal', function (fieldDescriptors) {
+    for(var i = 0; i < fieldDescriptors.length; i ++ ){
+        if(fieldDescriptors[i] && fieldDescriptors[i].className.includes('BigDecimal')){
+            return "import java.math.BigDecimal;";
         }
     }
 });
@@ -240,53 +249,48 @@ window.$HandleBars.registerHelper('isPrimitive', function (className) {
     }
 });
 
-window.$HandleBars.registerHelper('checkRelations', function (relations, className, isVO) {
+window.$HandleBars.registerHelper('checkRelations', function (relations, className, isVO, referenceClass, isList) {
     try {
         if(typeof relations === "undefined") {
             return 
         } else {
-            // primitive type
-            if(className.includes("String") || className.includes("Integer") || className.includes("Long") || className.includes("Double") || className.includes("Float")
-                    || className.includes("Boolean") || className.includes("Date")) {
-                if(className.includes("List")) {
+            // ValueObject
+            if(isVO) {
+                if(isList) {
                     return "@ElementCollection"
+                } else {
+                    return "@Embedded"
                 }
             } else {
-                // ValueObject
-                if(isVO) {
-                    if(className.includes("List")) {
-                        return "@ElementCollection"
-                    } else {
-                        return "@Embedded"
-                    }
-                } else {
-                    for(var i = 0; i < relations.length; i ++ ) {
-                        if(relations[i] != null) {
-                            if(className.includes(relations[i].targetElement.name) && !relations[i].relationType.includes("Generalization")) {
-                                // Enumeration
-                                if(relations[i].targetElement._type.endsWith('enum') || relations[i].targetElement._type.endsWith('Exception')) {
-                                    return
-                                }
-                                // complex type
-                                if(relations[i].sourceMultiplicity == "1" &&
-                                        (relations[i].targetMultiplicity == "1..n" || relations[i].targetMultiplicity == "0..n") || className.includes("List")
-                                ) {
-                                    return "@OneToMany"
+                for(var i = 0; i < relations.length; i ++ ) {
+                    if(relations[i] != null) {
+                        if(className.includes(relations[i].targetElement.name) && !relations[i].relationType.includes("Generalization")) {
+                            // Enumeration
+                            if(relations[i].targetElement._type.endsWith('enum') || relations[i].targetElement._type.endsWith('Exception')) {
+                                return
+                            }
+                            // complex type
+                            if(relations[i].sourceMultiplicity == "1" &&
+                                    (relations[i].targetMultiplicity == "1..n" || relations[i].targetMultiplicity == "0..n") || className.includes("List")
+                            ) {
+                                return "@OneToMany"
 
-                                } else if((relations[i].sourceMultiplicity == "1..n" || relations[i].sourceMultiplicity == "0..n") && relations[i].targetMultiplicity == "1"){
-                                    return "@ManyToOne"
-                                
-                                } else if(relations[i].sourceMultiplicity == "1" && relations[i].targetMultiplicity == "1"){
-                                    return "@OneToOne"
-                                
-                                } else if((relations[i].sourceMultiplicity == "1..n" || relations[i].sourceMultiplicity == "0..n") &&
-                                        (relations[i].targetMultiplicity == "1..n" || relations[i].targetMultiplicity == "0..n") || className.includes("List")
-                                ) {
-                                    return "@ManyToMany"
-                                }
+                            } else if((relations[i].sourceMultiplicity == "1..n" || relations[i].sourceMultiplicity == "0..n") && relations[i].targetMultiplicity == "1"){
+                                return "@ManyToOne"
+                            
+                            } else if(relations[i].sourceMultiplicity == "1" && relations[i].targetMultiplicity == "1"){
+                                return "@OneToOne"
+                            
+                            } else if((relations[i].sourceMultiplicity == "1..n" || relations[i].sourceMultiplicity == "0..n") &&
+                                    (relations[i].targetMultiplicity == "1..n" || relations[i].targetMultiplicity == "0..n") || className.includes("List")
+                            ) {
+                                return "@ManyToMany"
                             }
                         }
                     }
+                }
+                if(referenceClass) {
+                    return "@OneToOne"
                 }
             }
         }

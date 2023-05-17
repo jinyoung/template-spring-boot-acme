@@ -219,7 +219,7 @@ window.$HandleBars.registerHelper('checkAttribute', function (relations, source,
         for(var i =0; i<samePascal.length; i++){
             var camel = sameCamel[i];
             var pascal = samePascal[i];
-            var overrides = `@AttributeOverride(name="${camel}", column= @Column(name="${targetName}${pascal}", nullable=true))\n`;
+            var overrides = `@AttributeOverride(name="${camel}", column= @Column(name="${targetName}", nullable=true))\n`;
             attributeOverrides += overrides;
         }
 

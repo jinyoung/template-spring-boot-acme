@@ -4,3 +4,4 @@ tasks:
   - init: |
       nvm install 14.19.0 && 
       nvm use 14.19.0
+      mvn install -DskipTests=false

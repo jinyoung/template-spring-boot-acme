@@ -4,7 +4,4 @@ fileName: .gitpod.yml
 tasks:
   - init: |
       nvm install 14.19.0 && 
-      nvm use 14.19.0 && 
-      npm install &&
-      mvn install -DskipTests=false
-    command: npm run serve
+      nvm use 14.19.0

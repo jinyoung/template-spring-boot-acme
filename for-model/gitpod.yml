@@ -2,4 +2,5 @@ fileName: .gitpod.yml
 ---
 tasks:
   - init: |
-      mvn install -DskipTests=false
+      nvm install 14.19.0 && 
+      nvm use 14.19.0

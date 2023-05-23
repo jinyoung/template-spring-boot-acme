@@ -3,8 +3,7 @@
 # and commit this file to your remote git repository to share the goodness with others.
 tasks:
   - init: |
-      nvm install 14.19.0 && 
-      nvm use 14.19.0
+      mvn install -DskipTests=false
 
 
 

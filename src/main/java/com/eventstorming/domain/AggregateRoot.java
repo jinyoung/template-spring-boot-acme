@@ -33,7 +33,6 @@ public class {{namePascalCase}} {{#checkExtends aggregateRoot.entities.relations
     {{#isLob}}@Lob{{/isLob}}
     {{#if (isPrimitive className)}}{{#isList}}@ElementCollection{{/isList}}{{/if}}
     {{#checkRelations ../aggregateRoot.entities.relations className isVO referenceClass isList}}{{/checkRelations}}
-    {{#if isOverrideField}}@AttributeOverride(name="id", column= @Column(name= "{{nameCamelCase}}", nullable=true)){{/if}}
     private {{{className}}} {{nameCamelCase}};
     {{/aggregateRoot.fieldDescriptors}}
 
